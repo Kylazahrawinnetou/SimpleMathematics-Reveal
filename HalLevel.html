@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HalLevel • Reveal Quiz</title>
+  <style>
+    :root{
+      --panel:#d9d9d9;
+      --stroke:#222;
+      --text:#111;
+
+      --btn:#d6d6d6;
+      --btnHover:#cfcfcf;
+
+      --good:#0a7a2a;
+      --bad:#b00020;
+
+      --tileGap:14px;
+      --round:22px;
+
+      --stageH: 640px;
+      --backdrop: rgba(0,0,0,.65);
+    }
+
+    *{box-sizing:border-box;font-family:system-ui,Arial,sans-serif}
+    body{margin:0;background:#fff;color:var(--text)}
+    .page{max-width:1280px;margin:0 auto;padding:18px}
+
+    .topbar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+    .pill{
+      background:var(--panel);
+      border:2px solid var(--stroke);
+      border-radius:999px;
+      padding:10px 16px;
+      font-weight:700;
+      min-width:160px;
+      text-align:center;
+    }
+    .pill.btnlike{cursor:pointer; user-select:none;}
+    .pill.btnlike:hover{filter:brightness(.98)}
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap:18px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){ .layout{grid-template-columns:1fr} }
+
+    .card{
+      background:var(--panel);
+      border:2px solid var(--stroke);
+      border-radius:28px;
+      padding:18px;
+      height: var(--stageH);
+      display:flex;
+      flex-direction:column;
+    }
+    @media (max-width: 980px){ .card{height:auto} }
+
+    .question{
+      font-size:76px;
+      font-weight:900;
+      text-align:center;
+      margin:12px 0 18px;
+      letter-spacing:1px;
+      line-height:1;
+    }
+    @media (max-width: 980px){ .question{font-size:56px} }
+
+    .answerRow{
+      display:grid;
+      grid-template-columns: 260px 1fr 120px;
+      gap:16px;
+      align-items:center;
+      margin-bottom:16px;
+    }
+    @media (max-width: 980px){ .answerRow{grid-template-columns: 1fr} }
+
+    .noticeBox, .answerBox{
+      background:rgba(255,255,255,.35);
+      border:2px solid var(--stroke);
+      border-radius: var(--round);
+      padding:14px 16px;
+      min-height:54px;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;
+      text-align:center;
+    }
+    .noticeBox{font-weight:700}
+    .noticeBox.good{color:var(--good)}
+    .noticeBox.bad{color:var(--bad)}
+    .answerBox{font-size:28px; letter-spacing:1px}
+
+    .btn{
+      background:var(--btn);
+      border:2px solid var(--stroke);
+      border-radius: var(--round);
+      padding:14px 16px;
+      font-weight:800;
+      cursor:pointer;
+      user-select:none;
+      text-align:center;
+      min-height:54px;
+    }
+    .btn:hover{background:var(--btnHover)}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .btn.tall{min-height:176px; display:flex;align-items:center;justify-content:center; font-size:18px}
+    .btn.primary{background:#c9c9c9}
+    .btn.primary:hover{background:#c1c1c1}
+
+    .keypad{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:16px;
+      align-items:stretch;
+      margin-top:8px;
+      flex:1;
+    }
+    .keypad .num{font-size:20px}
+    .keypad .zero{grid-column: 2 / span 2;}
+    .keypad .ok{grid-column:4; grid-row:1}
+    .keypad .hint{grid-column:4; grid-row:2 / span 2}
+
+    .revealWrap{padding:18px}
+    .revealBox{
+      position:relative;
+      width:100%;
+      flex:1;
+      border-radius:28px;
+      overflow:hidden;
+      background:#000;
+      border:2px solid var(--stroke);
+    }
+    .imgLayer{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover;
+      filter:grayscale(1) brightness(0);
+      transition: filter .35s ease;
+    }
+
+    .tiles{
+      position:absolute; inset:0;
+      padding:var(--tileGap);
+      display:grid;
+      gap:var(--tileGap);
+      pointer-events:none;
+      z-index:3;
+    }
+    .tile{
+      border-radius:22px;
+      background:rgba(217,217,217,.95);
+      border:2px solid rgba(0,0,0,.55);
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      transition:opacity .2s ease, transform .2s ease;
+      opacity:1;
+    }
+    .tile.open{opacity:0; transform:scale(.98)}
+
+    .shake{animation:shake .35s ease}
+    @keyframes shake{
+      0%{transform:translateX(0)}
+      20%{transform:translateX(-10px)}
+      40%{transform:translateX(10px)}
+      60%{transform:translateX(-7px)}
+      80%{transform:translateX(7px)}
+      100%{transform:translateX(0)}
+    }
+
+    /* ===== reveal modal ===== */
+    .modalBack{
+      position:fixed; inset:0;
+      background:var(--backdrop);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      z-index:999;
+    }
+    .modalBack.show{display:flex;}
+    .modalCard{
+      width:min(520px, 94vw);
+      aspect-ratio:1/1;
+      background:var(--panel);
+      border:2px solid var(--stroke);
+      border-radius:28px;
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 26px 80px rgba(0,0,0,.45);
+      animation: floatIn .35s ease;
+    }
+    @keyframes floatIn{
+      from{transform:translateY(14px); opacity:.2}
+      to{transform:translateY(0); opacity:1}
+    }
+    .modalGlow{
+      position:absolute; inset:-30%;
+      opacity:1;
+      mix-blend-mode:screen;
+      pointer-events:none;
+    }
+    .modalImg{
+      width:82%;
+      height:82%;
+      object-fit:cover;
+      border-radius:22px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      animation: floaty 2.6s ease-in-out infinite;
+    }
+    @keyframes floaty{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-8px)}
+    }
+    .modalHint{
+      position:absolute; right:14px; bottom:14px;
+      background:rgba(255,255,255,.70);
+      border:2px solid var(--stroke);
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:800;
+    }
+
+    /* ===== exit modal (badge) ===== */
+    .exitCard{
+      width:min(560px, 94vw);
+      background:var(--panel);
+      border:2px solid var(--stroke);
+      border-radius:28px;
+      padding:18px;
+      box-shadow: 0 26px 80px rgba(0,0,0,.45);
+      animation: floatIn .35s ease;
+    }
+    .exitTitle{
+      font-size:28px;
+      font-weight:950;
+      margin:0 0 8px;
+      text-align:center;
+    }
+    .exitDesc{
+      margin:0 0 14px;
+      text-align:center;
+      font-weight:700;
+      opacity:.9;
+    }
+    .exitActions{
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .exitActions .btn{min-width:180px;}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div id="btnMenu" class="pill btnlike">Menu</div>
+      <div class="pill">Level <span id="level">1</span>/29</div>
+      <div class="pill">Salah <span id="wrong">0</span>/3</div>
+      <div class="pill">Timer <span id="timer">20</span> detik</div>
+    </div>
+
+    <div class="layout">
+      <section class="card" id="leftCard">
+        <div id="question" class="question">2 + 10 = ?</div>
+
+        <div class="answerRow">
+          <div id="notice" class="noticeBox"></div>
+          <div id="answer" class="answerBox"></div>
+          <button id="btnDel" class="btn">hapus</button>
+        </div>
+
+        <div class="keypad" id="keypad"></div>
+      </section>
+
+      <section class="card revealWrap">
+        <div id="revealBox" class="revealBox">
+          <img id="img" class="imgLayer" alt="item" />
+          <div id="tiles" class="tiles"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Reveal modal -->
+  <div id="modalBack" class="modalBack" role="dialog" aria-modal="true">
+    <div class="modalCard" id="modalCard">
+      <div id="modalGlow" class="modalGlow"></div>
+      <img id="modalImg" class="modalImg" alt="reveal" />
+      <div class="modalHint">ketuk dimana saja</div>
+    </div>
+  </div>
+
+  <!-- Exit modal (timer habis / no gesture) -->
+  <div id="exitBack" class="modalBack" role="dialog" aria-modal="true">
+    <div class="exitCard" id="exitCard">
+      <h2 class="exitTitle">Keluar dari kuis?</h2>
+      <p class="exitDesc" id="exitMsg">Waktu habis. Mau keluar?</p>
+      <div class="exitActions">
+        <button id="exitYes" class="btn">iya</button>
+        <button id="exitNo" class="btn primary">tidak</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio -->
+  <audio id="bgm" loop preload="auto">
+    <source src="assets/audio/bgm.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="sfxCorrect" preload="auto">
+    <source src="assets/audio/correct.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="sfxWrong" preload="auto">
+    <source src="assets/audio/wrong.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="sfxReveal" preload="auto">
+    <source src="assets/audio/reveal.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    // ===== images per phase =====
+    const PHASE_IMAGES = {
+      p2: "assets/img/phase-2x2.jpg",
+      p3: "assets/img/phase-3x3.jpg",
+      p4: "assets/img/phase-4x4.jpg",
+    };
+
+    function makePlaceholderSVG(label){
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+          <rect width="900" height="900" fill="#111"/>
+          <rect x="90" y="90" width="720" height="720" rx="52" fill="#222" opacity="0.95"/>
+          <text x="450" y="470" text-anchor="middle" font-family="system-ui,Arial" font-size="44" fill="#eaeaea">${label}</text>
+        </svg>`;
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+    const PLACEHOLDER = {
+      p2: makePlaceholderSVG("PHASE 2×2"),
+      p3: makePlaceholderSVG("PHASE 3×3"),
+      p4: makePlaceholderSVG("PHASE 4×4"),
+    };
+
+    const CONFIG = {
+      totalLevels: 29,
+      wrongToShowHint: 3,
+      totalHints: 3,
+      phases: [
+        { start: 1,  end: 4,  grid: 2, timer: 20, ops: ["add"], tileGap: 10 },
+        { start: 5,  end: 13, grid: 3, timer: 15, ops: ["add","sub"], tileGap: 14 },
+        { start: 14, end: 29, grid: 4, timer: 10, ops: ["mul"], tileGap: 12 },
+      ],
+      randomTileOrderFromPhaseIndex: 1,
+      noticeDefault: "Ayo hitung cepat!",
+      noticeAutoResetMs: 900,
+
+      // glow acak, tanpa label rarity
+      glowPresets: [
+        "radial-gradient(circle at 50% 45%, rgba(255,255,255,.85), rgba(255,255,255,0) 60%)",
+        "radial-gradient(circle at 50% 45%, rgba(80,120,255,.85), rgba(80,120,255,0) 60%)",
+        "radial-gradient(circle at 50% 45%, rgba(180,90,255,.85), rgba(180,90,255,0) 60%)",
+        "radial-gradient(circle at 50% 45%, rgba(255,190,50,.88), rgba(255,190,50,0) 60%)",
+      ],
+
+      menuHref: "menu.html",
+      endHref: "end.html",
+
+      // kalau belum gesture sama sekali selama 30 detik
+      noGesturePromptSec: 30,
+
+      // jawaban hint ditampilkan lebih lama
+      hintShowMs: 3200,
+    };
+
+    // ===== SAVE =====
+    const SAVE_KEY = "revealQuizSave";
+    function makeNewSave(){
+      return {
+        version: 1,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        level: 1,
+        hintsLeft: CONFIG.totalHints,
+        phaseIndex: 0,
+        tilesOpen: 0,
+        tileOrder: [],
+
+        // stats untuk end.html
+        wrongTotal: 0,
+        hintUsed: 0,
+      };
+    }
+    function loadSave(){
+      try{
+        const raw = localStorage.getItem(SAVE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(_){ return null; }
+    }
+    function writeSave(save){
+      save.updatedAt = Date.now();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    }
+
+    const state = {
+      level: 1,
+      wrongThisLevel: 0,
+
+      // stats akumulatif
+      wrongTotal: 0,
+      hintUsed: 0,
+
+      hintsLeft: CONFIG.totalHints,
+      input: "",
+      question: null,
+
+      timerLeft: 20,
+      timerId: null,
+
+      phaseIndex: 0,
+      grid: 2,
+      tilesTotal: 4,
+      tilesOpen: 0,
+      tileOrder: [],
+      phaseComplete: false,
+      gameOver: false,
+
+      waitingRevealGesture: false,
+
+      audioUnlocked: false,
+      hasAnyGesture: false,
+
+      phaseImgSrc: "",
+      phaseKey: "p2",
+
+      pausedByExit: false,
+    };
+
+    function syncStateToSave(){
+      const save = loadSave() || makeNewSave();
+      save.level = state.level;
+      save.hintsLeft = state.hintsLeft;
+      save.phaseIndex = state.phaseIndex;
+      save.tilesOpen = state.tilesOpen;
+      save.tileOrder = Array.isArray(state.tileOrder) ? state.tileOrder : [];
+
+      // stats
+      save.wrongTotal = Number.isFinite(state.wrongTotal) ? state.wrongTotal : (save.wrongTotal || 0);
+      save.hintUsed = Number.isFinite(state.hintUsed) ? state.hintUsed : (save.hintUsed || 0);
+
+      writeSave(save);
+    }
+    window.addEventListener("beforeunload", () => {
+      try{ syncStateToSave(); }catch(_){}
+    });
+
+    // ===== DOM =====
+    const elLevel = document.getElementById("level");
+    const elWrong = document.getElementById("wrong");
+    const elTimer = document.getElementById("timer");
+    const elQuestion = document.getElementById("question");
+    const elNotice = document.getElementById("notice");
+    const elAnswer = document.getElementById("answer");
+    const btnDel = document.getElementById("btnDel");
+    const keypad = document.getElementById("keypad");
+
+    const leftCard = document.getElementById("leftCard");
+    const revealBox = document.getElementById("revealBox");
+    const img = document.getElementById("img");
+    const tiles = document.getElementById("tiles");
+    const btnMenu = document.getElementById("btnMenu");
+
+    const modalBack = document.getElementById("modalBack");
+    const modalGlow = document.getElementById("modalGlow");
+    const modalImg = document.getElementById("modalImg");
+    const modalCard = document.getElementById("modalCard");
+
+    const exitBack = document.getElementById("exitBack");
+    const exitMsg = document.getElementById("exitMsg");
+    const exitYes = document.getElementById("exitYes");
+    const exitNo = document.getElementById("exitNo");
+    const exitCard = document.getElementById("exitCard");
+
+    const bgm = document.getElementById("bgm");
+    const sfxCorrect = document.getElementById("sfxCorrect");
+    const sfxWrong = document.getElementById("sfxWrong");
+    const sfxReveal = document.getElementById("sfxReveal");
+
+    // ===== helpers =====
+    let noticeResetT = null;
+    function setNotice(msg, tone="", autoReset=true){
+      elNotice.textContent = msg || "";
+      elNotice.classList.remove("good","bad");
+      if (tone === "good") elNotice.classList.add("good");
+      if (tone === "bad") elNotice.classList.add("bad");
+
+      if (noticeResetT) clearTimeout(noticeResetT);
+      if (autoReset && msg){
+        noticeResetT = setTimeout(() => {
+          setNotice(CONFIG.noticeDefault, "", false);
+        }, CONFIG.noticeAutoResetMs);
+      }
+    }
+
+    function updateTop(){
+      elLevel.textContent = state.level;
+      elWrong.textContent = Math.min(state.wrongThisLevel, 3);
+      elTimer.textContent = state.timerLeft;
+    }
+    function updateAnswer(){
+      elAnswer.textContent = state.input.length ? state.input : "";
+    }
+    function shake(el){
+      el.classList.remove("shake");
+      void el.offsetWidth;
+      el.classList.add("shake");
+    }
+    function fisherYates(arr){
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    async function unlockAudioIfNeeded(){
+      if (state.audioUnlocked) return;
+      state.audioUnlocked = true;
+      try{
+        bgm.volume = 0.35;
+        await bgm.play();
+      }catch(e){
+        state.audioUnlocked = false;
+      }
+    }
+    function playSfx(el){
+      if (!state.audioUnlocked) return;
+      try{ el.currentTime = 0; el.play(); }catch(_){}
+    }
+
+    function registerGesture(){
+      state.hasAnyGesture = true;
+      unlockAudioIfNeeded();
+    }
+
+    function getPhaseIndex(level){
+      for (let i=0;i<CONFIG.phases.length;i++){
+        const p = CONFIG.phases[i];
+        if (level >= p.start && level <= p.end) return i;
+      }
+      return CONFIG.phases.length - 1;
+    }
+    function phaseDef(){ return CONFIG.phases[state.phaseIndex]; }
+
+    function phaseKeyFromIndex(idx){
+      if (idx === 0) return "p2";
+      if (idx === 1) return "p3";
+      return "p4";
+    }
+    function setPhaseImage(idx){
+      const key = phaseKeyFromIndex(idx);
+      state.phaseKey = key;
+      const candidate = PHASE_IMAGES[key] || "";
+      state.phaseImgSrc = candidate || "";
+
+      img.onerror = () => { img.src = PLACEHOLDER[key]; };
+      img.src = state.phaseImgSrc || PLACEHOLDER[key];
+      img.style.filter = "grayscale(1) brightness(0)";
+    }
+
+    // ===== exit badge =====
+    function pauseTimer(){
+      clearInterval(state.timerId);
+      state.timerId = null;
+    }
+    function resumeTimerReset(){
+      state.pausedByExit = false;
+      state.timerLeft = phaseDef().timer;
+      updateTop();
+      startTimer();
+    }
+    function showExitBadge(message){
+      state.pausedByExit = true;
+      pauseTimer();
+      exitMsg.textContent = message || "Mau keluar dari kuis?";
+      exitBack.classList.add("show");
+    }
+    function hideExitBadge(){
+      exitBack.classList.remove("show");
+    }
+
+    exitYes.addEventListener("click", () => {
+      registerGesture();
+      syncStateToSave();
+      window.location.href = CONFIG.menuHref; // ✅ menu.html
+    });
+    exitNo.addEventListener("click", () => {
+      registerGesture();
+      hideExitBadge();
+      setNotice("Oke, kita lanjut!", "", true);
+      resumeTimerReset();
+    });
+    exitBack.addEventListener("click", () => {
+      registerGesture();
+      hideExitBadge();
+      setNotice("Oke, kita lanjut!", "", true);
+      resumeTimerReset();
+    });
+    exitCard.addEventListener("click", (e) => e.stopPropagation());
+
+    // ===== 30s no gesture watcher =====
+    function startNoGestureWatcher(){
+      const startAt = Date.now();
+      const t = setInterval(() => {
+        if (state.hasAnyGesture) { clearInterval(t); return; }
+        if (state.gameOver) { clearInterval(t); return; }
+        const sec = (Date.now() - startAt) / 1000;
+        if (sec >= CONFIG.noGesturePromptSec){
+          clearInterval(t);
+          showExitBadge("Belum ada interaksi. Mau keluar dari kuis?");
+        }
+      }, 250);
+    }
+
+    // ===== tiles / phase =====
+    function setupPhaseIfNeeded(fromInit=false){
+      const idx = getPhaseIndex(state.level);
+      const isSamePhase = (idx === state.phaseIndex);
+      state.phaseIndex = idx;
+
+      const p = phaseDef();
+      state.grid = p.grid;
+      state.tilesTotal = p.grid * p.grid;
+
+      document.documentElement.style.setProperty("--tileGap", p.tileGap + "px");
+
+      const needsRebuild = (!isSamePhase) || (tiles.children.length !== state.tilesTotal);
+      if (needsRebuild){
+        state.tilesOpen = 0;
+        state.phaseComplete = false;
+
+        tiles.style.gridTemplateColumns = `repeat(${state.grid}, 1fr)`;
+        tiles.style.gridTemplateRows = `repeat(${state.grid}, 1fr)`;
+        tiles.innerHTML = "";
+        for (let i=0;i<state.tilesTotal;i++){
+          const d = document.createElement("div");
+          d.className = "tile";
+          d.dataset.tile = String(i);
+          tiles.appendChild(d);
+        }
+
+        const order = [...Array(state.tilesTotal).keys()];
+        state.tileOrder = (idx >= CONFIG.randomTileOrderFromPhaseIndex) ? fisherYates(order) : order;
+
+        setPhaseImage(idx);
+        setNotice(CONFIG.noticeDefault, "", false);
+        updateTop();
+
+        if (!fromInit) syncStateToSave();
+      }
+    }
+
+    function applyTilesOpenUI(){
+      for (let i=0;i<state.tilesOpen;i++){
+        const idx = state.tileOrder[i];
+        const tile = tiles.querySelector(`.tile[data-tile="${idx}"]`);
+        if (tile) tile.classList.add("open");
+      }
+    }
+
+    function openNextTile(){
+      if (state.tilesOpen >= state.tilesTotal) return;
+
+      const idx = state.tileOrder[state.tilesOpen];
+      const tile = tiles.querySelector(`.tile[data-tile="${idx}"]`);
+      if (tile) tile.classList.add("open");
+      state.tilesOpen++;
+
+      syncStateToSave();
+
+      if (state.tilesOpen >= state.tilesTotal){
+        onPhaseComplete();
+      }
+    }
+
+    function onPhaseComplete(){
+      state.phaseComplete = true;
+      state.waitingRevealGesture = true;
+      pauseTimer();
+
+      const glow = CONFIG.glowPresets[Math.floor(Math.random() * CONFIG.glowPresets.length)];
+      modalGlow.style.background = glow;
+
+      modalImg.onerror = () => { modalImg.src = PLACEHOLDER[state.phaseKey]; };
+      modalImg.src = state.phaseImgSrc || PLACEHOLDER[state.phaseKey];
+
+      playSfx(sfxReveal);
+      modalBack.classList.add("show");
+
+      syncStateToSave();
+    }
+
+    function closeRevealAndContinue(){
+      if (!state.waitingRevealGesture) return;
+      modalBack.classList.remove("show");
+      state.waitingRevealGesture = false;
+      state.phaseComplete = false;
+      nextLevel();
+    }
+
+    modalBack.addEventListener("click", () => { registerGesture(); closeRevealAndContinue(); });
+    modalCard.addEventListener("click", (e) => { e.stopPropagation(); registerGesture(); closeRevealAndContinue(); });
+
+    // ===== questions =====
+    function genQuestion(){
+      const ops = phaseDef().ops;
+      const op = ops[Math.floor(Math.random() * ops.length)];
+
+      if (op === "add"){
+        const max = (state.phaseIndex === 0) ? 20 : 30;
+        const a = Math.floor(Math.random() * (max + 1));
+        const b = Math.floor(Math.random() * (max + 1));
+        return { a, b, symbol:"+", ans:a+b };
+      }
+
+      if (op === "sub"){
+        const max = 30;
+        let a = Math.floor(Math.random() * (max + 1));
+        let b = Math.floor(Math.random() * (max + 1));
+        if (b > a) [a,b] = [b,a];
+        return { a, b, symbol:"−", ans:a-b };
+      }
+
+      const a = 1 + Math.floor(Math.random() * 10);
+      const b = 1 + Math.floor(Math.random() * 10);
+      return { a, b, symbol:"×", ans:a*b };
+    }
+
+    function renderQuestion(){
+      const q = state.question;
+      elQuestion.textContent = `${q.a} ${q.symbol} ${q.b} = ?`;
+    }
+
+    // ===== TIMER =====
+    // Kalau habis -> stop timer -> tampilkan badge exit (dan timer tidak lanjut terus)
+    function startTimer(){
+      clearInterval(state.timerId);
+      state.timerLeft = phaseDef().timer;
+      updateTop();
+
+      state.timerId = setInterval(() => {
+        if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+
+        state.timerLeft--;
+        updateTop();
+
+        if (state.timerLeft <= 0){
+          pauseTimer();
+          showExitBadge("Waktu habis. Mau keluar dari kuis?");
+        }
+      }, 1000);
+    }
+
+    // ===== input =====
+    function appendDigit(d){
+      if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+      registerGesture();
+      if (state.input.length >= 3) return;
+      if (state.input === "0") state.input = "";
+      state.input += String(d);
+      updateAnswer();
+    }
+
+    function del(){
+      if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+      registerGesture();
+      state.input = state.input.slice(0,-1);
+      updateAnswer();
+    }
+
+    function submit(){
+      if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+      registerGesture();
+
+      if (!state.input.length){
+        shake(leftCard);
+        setNotice("Isi jawaban dulu", "bad");
+        return;
+      }
+
+      const user = Number(state.input);
+      const correct = state.question.ans;
+      state.input = "";
+      updateAnswer();
+
+      if (user === correct) onCorrect();
+      else onWrong("Jawaban salah");
+    }
+
+    async function useHint(){
+      if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+      registerGesture();
+
+      if (state.wrongThisLevel < CONFIG.wrongToShowHint) return;
+      if (state.hintsLeft <= 0) return;
+
+      state.hintsLeft--;
+      state.hintUsed++;          // ✅ stats
+      syncStateToSave();
+
+      const ans = String(state.question.ans);
+      elAnswer.textContent = ans;
+      setNotice(`Jawaban: ${ans}`, "good", false);
+
+      await new Promise(r => setTimeout(r, CONFIG.hintShowMs));
+
+      state.input = "";
+      updateAnswer();
+
+      setNotice("Skip level (pakai hint)", "", true);
+      finishLevel();
+    }
+
+    function buildKeypad(){
+      keypad.innerHTML = "";
+
+      ["1","2","3","4","5","6","7","8","9"].forEach(n => {
+        const b = document.createElement("button");
+        b.className = "btn num";
+        b.type = "button";
+        b.textContent = n;
+        b.addEventListener("click", () => appendDigit(n));
+        keypad.appendChild(b);
+      });
+
+      const ok = document.createElement("button");
+      ok.className = "btn primary ok";
+      ok.type = "button";
+      ok.textContent = "ok";
+      ok.addEventListener("click", submit);
+      keypad.appendChild(ok);
+
+      const hint = document.createElement("button");
+      hint.id = "btnHint";
+      hint.className = "btn tall hint";
+      hint.type = "button";
+      hint.textContent = "hint";
+      hint.addEventListener("click", useHint);
+      keypad.appendChild(hint);
+
+      const zero = document.createElement("button");
+      zero.className = "btn num zero";
+      zero.type = "button";
+      zero.textContent = "0";
+      zero.addEventListener("click", () => appendDigit("0"));
+      keypad.appendChild(zero);
+    }
+
+    function syncHintButton(){
+      const hintBtn = document.getElementById("btnHint");
+      const available = (state.wrongThisLevel >= CONFIG.wrongToShowHint) && (state.hintsLeft > 0);
+      hintBtn.disabled = !available;
+      hintBtn.style.opacity = available ? "1" : "0.55";
+    }
+
+    function onWrong(msg){
+      state.wrongThisLevel++;
+      state.wrongTotal++;        // ✅ stats
+      syncStateToSave();         // ✅ simpan biar end.html pasti akurat
+
+      shake(revealBox);
+      setNotice(msg, "bad", true);
+      playSfx(sfxWrong);
+      syncHintButton();
+      updateTop();
+    }
+
+    function onCorrect(){
+      setNotice("Jawaban benar", "good", true);
+      playSfx(sfxCorrect);
+      finishLevel();
+    }
+
+    function finishLevel(){
+      openNextTile();
+      state.wrongThisLevel = 0;
+      syncHintButton();
+      updateTop();
+
+      if (!state.phaseComplete){
+        nextLevel();
+      }
+    }
+
+    function nextLevel(){
+      state.level++;
+      syncStateToSave();
+
+      if (state.level > CONFIG.totalLevels){
+        gameOver();
+        return;
+      }
+
+      setupPhaseIfNeeded(false);
+      state.question = genQuestion();
+      renderQuestion();
+      state.input = "";
+      updateAnswer();
+      syncHintButton();
+      startTimer();
+      updateTop();
+      setNotice(CONFIG.noticeDefault, "", false);
+    }
+
+    function gameOver(){
+      state.gameOver = true;
+      pauseTimer();
+      setNotice("Selesai! 🎉", "good", false);
+      elQuestion.textContent = "SELESAI";
+      btnDel.disabled = true;
+      Array.from(keypad.querySelectorAll("button")).forEach(b => b.disabled = true);
+      try{ bgm.pause(); }catch(_){}
+      syncStateToSave();
+
+      // ✅ ke halaman akhir
+      setTimeout(() => {
+        window.location.href = CONFIG.endHref;
+      }, 600);
+    }
+
+    // ===== events =====
+    btnDel.addEventListener("click", del);
+
+    window.addEventListener("keydown", (e) => {
+      registerGesture();
+      if (e.key === "Enter") submit();
+      if (e.key === "Backspace") del();
+      if (/^\d$/.test(e.key)) appendDigit(e.key);
+    });
+
+    btnMenu.addEventListener("click", () => {
+      registerGesture();
+      showExitBadge("Balik ke menu?");
+    });
+
+    // ===== init =====
+    function init(){
+      buildKeypad();
+
+      let save = loadSave();
+      if (!save){
+        save = makeNewSave();
+        writeSave(save);
+      }
+
+      state.level = Math.max(1, Math.min(CONFIG.totalLevels, Number(save.level || 1)));
+      state.hintsLeft = Number.isFinite(save.hintsLeft) ? save.hintsLeft : CONFIG.totalHints;
+
+      // stats load
+      state.wrongTotal = Number.isFinite(save.wrongTotal) ? save.wrongTotal : 0;
+      state.hintUsed = Number.isFinite(save.hintUsed) ? save.hintUsed : 0;
+
+      setupPhaseIfNeeded(true);
+
+      if (save.phaseIndex === state.phaseIndex &&
+          Array.isArray(save.tileOrder) &&
+          save.tileOrder.length === state.tilesTotal &&
+          typeof save.tilesOpen === "number")
+      {
+        state.tileOrder = save.tileOrder.slice();
+        state.tilesOpen = Math.max(0, Math.min(state.tilesTotal, save.tilesOpen));
+        applyTilesOpenUI();
+      } else {
+        state.tilesOpen = 0;
+        syncStateToSave();
+      }
+
+      state.question = genQuestion();
+      renderQuestion();
+      state.input = "";
+      updateAnswer();
+      syncHintButton();
+      startTimer();
+      updateTop();
+      setNotice(CONFIG.noticeDefault, "", false);
+
+      startNoGestureWatcher();
+      syncStateToSave();
+    }
+
+    init();
+  </script>
+</body>
+</html>
