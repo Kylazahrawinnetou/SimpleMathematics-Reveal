@@ -3,18 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Menu • Game</title>
+  <title>Menu • Math Reveal</title>
+
   <style>
     :root{
-      --stroke:#222;
-      --panel:#d9d9d9;
       --text:#111;
       --btn:#d6d6d6;
       --btnHover:#cfcfcf;
-      --round:28px;
+      --stroke:#222;
     }
-    *{ box-sizing:border-box; font-family:system-ui, Arial, sans-serif; }
-    body{ margin:0; background:#fff; color:var(--text); }
+
+    *{
+      box-sizing:border-box;
+      font-family:system-ui, Arial, sans-serif;
+    }
+
+    body{
+      margin:0;
+      background:#fff;
+      color:var(--text);
+      overflow:hidden; /* tidak scroll */
+    }
 
     .screen{
       min-height:100vh;
@@ -22,78 +31,99 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:22px;
-      padding:24px;
+      gap:6px;          /* ✅ JARAK PALING RAPAT */
+      padding:12px;     /* kecil, aman */
+      text-align:center;
     }
 
-    .logoCard{
-      width:min(420px, 80vw);
-      aspect-ratio:1/1;
-      border:2px solid var(--stroke);
-      border-radius:var(--round);
-      background:var(--panel);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      margin-bottom:6px;
+    /* LOGO TANPA PEMBUNGKUS */
+    .logo{
+      width:min(480px, 85vw);
+      height:auto;
+      display:block;
+      pointer-events:none;
+      user-select:none;
+      margin:0;         /* ❌ NO MARGIN */
     }
-    .logoImg{ width:100%; height:100%; object-fit:cover; }
 
     .btn{
       width:min(420px, 80vw);
+      padding:16px 18px;
+      font-size:28px;
+      font-weight:800;
       border:2px solid var(--stroke);
       background:var(--btn);
       border-radius:22px;
-      padding:18px 18px;
-      font-weight:800;
-      font-size:28px;
       cursor:pointer;
       user-select:none;
+      margin:0;         /* ❌ NO MARGIN */
     }
     .btn:hover{ background:var(--btnHover); }
 
     .btn.small{
       width:min(360px, 70vw);
-      font-size:28px;
-      padding:16px 18px;
-      border-radius:20px;
+      font-size:24px;
+      padding:14px 18px;
+      border-radius:18px;
     }
-    .spacer{ height:6px; }
   </style>
 </head>
 <body>
-  <main class="screen">
-    <section class="logoCard" aria-label="Logo game">
-      <img
-        class="logoImg"
-        src="assets/img/logo-placeholder.png"
-        alt="Logo Game"
-        onerror="this.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;700&quot; height=&quot;700&quot; viewBox=&quot;0 0 700 700&quot;><rect width=&quot;700&quot; height=&quot;700&quot; rx=&quot;40&quot; fill=&quot;%23d9d9d9&quot; stroke=&quot;%23222&quot; stroke-width=&quot;4&quot;/><text x=&quot;350&quot; y=&quot;370&quot; text-anchor=&quot;middle&quot; font-family=&quot;system-ui,Arial&quot; font-size=&quot;38&quot; fill=&quot;%23111&quot;>Logo Game</text></svg>`)"
-      />
-    </section>
 
-    <div class="spacer"></div>
+  <main class="screen">
+    <img
+      src="assets/img/logomathreveal.png"
+      alt="Math Reveal"
+      class="logo"
+      draggable="false"
+    />
 
     <button id="btnStart" class="btn" type="button">Mulai</button>
     <button id="btnReset" class="btn small" type="button">Hapus Data</button>
   </main>
 
-  <script>
-    // ====== 1 KEY SAJA, biar simpel & aman ======
-    const SAVE_KEY = "revealQuizSave";
+  <!-- 🎵 BGM LANJUT -->
+  <audio id="bgm" loop preload="auto">
+    <source src="assets/audio/mathreveal.mp3" type="audio/mpeg">
+  </audio>
 
-    // Halaman berikutnya (aturan dulu, nanti aturan.html kita buat)
-    const NEXT_PAGE = "aturan.html"; // atau ganti ke "HalLevel.html" kalau mau langsung main
+  <script>
+    /* ===== BGM LANJUT DARI INDEX ===== */
+    const bgm = document.getElementById("bgm");
+
+    function resumeBgm(){
+      if (localStorage.getItem("bgmUnlocked") !== "1") return;
+
+      const t = Number(sessionStorage.getItem("bgmTime") || "0");
+      if (t > 0){
+        try{ bgm.currentTime = t; }catch(_){}
+      }
+
+      bgm.volume = 0.4;
+      bgm.play().catch(()=>{});
+    }
+
+    function persistTime(){
+      try{
+        sessionStorage.setItem("bgmTime", String(bgm.currentTime || 0));
+      }catch(_){}
+    }
+
+    resumeBgm();
+    window.addEventListener("pagehide", persistTime);
+
+    /* ===== SAVE SYSTEM ===== */
+    const SAVE_KEY = "revealQuizSave";
+    const NEXT_PAGE = "aturan.html";
 
     function makeNewSave(){
-      // struktur minimal (nanti HalLevel.html bisa update isi ini)
       return {
         version: 1,
         createdAt: Date.now(),
-        lastLevel: 1,
+        level: 1,
         hintsLeft: 3,
-        // boleh tambah nanti: tileState, phaseIndex, dsb
+        wrongTotal: 0,
+        hintUsed: 0
       };
     }
 
@@ -111,21 +141,17 @@
     }
 
     document.getElementById("btnStart").addEventListener("click", () => {
-      // kalau belum ada save, buat baru
-      const existing = loadSave();
-      if (!existing){
-        save(makeNewSave());
-      }
+      if (!loadSave()) save(makeNewSave());
+      persistTime();
       window.location.href = NEXT_PAGE;
     });
 
     document.getElementById("btnReset").addEventListener("click", () => {
-      const yes = window.confirm("Yakin mau hapus data game (progress, hint, dll)?");
-      if (!yes) return;
-
+      if (!confirm("Yakin mau hapus semua data game?")) return;
       localStorage.removeItem(SAVE_KEY);
-      window.alert("Data game sudah dihapus.");
+      alert("Data game sudah dihapus.");
     });
   </script>
+
 </body>
 </html>

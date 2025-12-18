@@ -99,7 +99,50 @@
     </section>
   </main>
 
+  <!-- ✅ BGM LANJUT -->
+  <audio id="bgm" loop preload="auto">
+    <source src="assets/audio/mathreveal.mp3" type="audio/mpeg">
+  </audio>
+
   <script>
+    /* ===============================
+       BGM: LANJUT TANPA MULAI DARI 0
+       =============================== */
+    const bgm = document.getElementById("bgm");
+
+    function persistBgmTime(){
+      try{ sessionStorage.setItem("bgmTime", String(bgm.currentTime || 0)); }catch(_){}
+    }
+
+    function resumeBgmSoft(){
+      if (localStorage.getItem("bgmUnlocked") !== "1") return;
+
+      const t = Number(sessionStorage.getItem("bgmTime") || "0");
+      if (Number.isFinite(t) && t > 0){
+        try{ bgm.currentTime = t; }catch(_){}
+      }
+
+      bgm.volume = 0.4;
+      bgm.play().catch(()=>{});
+    }
+
+    function ensureBgmByGesture(){
+      if (localStorage.getItem("bgmUnlocked") !== "1") return;
+      bgm.volume = 0.4;
+      bgm.play().catch(()=>{});
+    }
+
+    resumeBgmSoft();
+    window.addEventListener("pagehide", persistBgmTime);
+    window.addEventListener("beforeunload", persistBgmTime);
+
+    // kalau user tap di mana aja, pastiin musik nyala
+    window.addEventListener("pointerdown", ensureBgmByGesture, { passive:true });
+    window.addEventListener("keydown", ensureBgmByGesture);
+
+    /* ===============================
+       ORIGINAL END LOGIC
+       =============================== */
     const SAVE_KEY = "revealQuizSave";
     const TOTAL_LEVELS = 29;
 
@@ -126,11 +169,15 @@
     document.getElementById("totalWrong").textContent = String(wrongTotal);
 
     document.getElementById("btnExit").addEventListener("click", () => {
+      ensureBgmByGesture();
+      persistBgmTime();
       window.location.href = "menu.html";
     });
 
     document.getElementById("btnReplay").addEventListener("click", () => {
-      // reset run (tetap simpan file save biar konsisten)
+      ensureBgmByGesture();
+      persistBgmTime();
+
       const next = {
         ...save,
         version: save.version || 1,
@@ -143,7 +190,6 @@
         tileOrder: [],
         hintsLeft: (typeof save.hintsLeft === "number") ? save.hintsLeft : 3,
 
-        // reset statistik run
         wrongTotal: 0,
         hintUsed: 0,
       };

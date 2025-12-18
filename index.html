@@ -3,13 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Index • Tap to Start</title>
+  <title>Math Reveal • Tap to Start</title>
+
   <style>
-    :root{
-      --stroke:#222;
-      --panel:#d9d9d9;
-      --text:#111;
-    }
+    :root{ --text:#111; }
     *{ box-sizing:border-box; font-family:system-ui, Arial, sans-serif; }
     body{ margin:0; background:#fff; color:var(--text); }
 
@@ -19,72 +16,91 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:48px;
+      gap:20px;
       padding:24px;
       cursor:pointer;
       user-select:none;
+      text-align:center;
     }
 
-    .logoCard{
-      width:min(360px, 80vw);
-      aspect-ratio:1/1;
-      border:2px solid var(--stroke);
-      border-radius:28px;
-      background:var(--panel);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-    }
-
-    .logoImg{
-      width:100%;
-      height:100%;
-      object-fit:cover;
+    .logo{
+      width:min(520px, 85vw);
+      height:auto;
+      display:block;
+      pointer-events:none;
+      user-select:none;
     }
 
     .tapText{
-      font-size:28px;
-      text-align:center;
+      font-size:17px;
+      opacity:.85;
       letter-spacing:.2px;
       animation: blink 1.2s ease-in-out infinite;
     }
 
     @keyframes blink{
-      0%, 100%{ opacity:1; }
-      50%{ opacity:0; }
+      0%,100%{ opacity:1; }
+      50%{ opacity:.2; }
     }
   </style>
 </head>
 <body>
-  <main class="screen" id="tapArea" aria-label="Tap to start">
-    <section class="logoCard" aria-label="Logo game">
-      <img
-        class="logoImg"
-        src="assets/img/logo-placeholder.png"
-        alt="Logo Game"
-        onerror="this.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;700&quot; height=&quot;700&quot; viewBox=&quot;0 0 700 700&quot;><rect width=&quot;700&quot; height=&quot;700&quot; rx=&quot;40&quot; fill=&quot;%23d9d9d9&quot; stroke=&quot;%23222&quot; stroke-width=&quot;4&quot;/><text x=&quot;350&quot; y=&quot;370&quot; text-anchor=&quot;middle&quot; font-family=&quot;system-ui,Arial&quot; font-size=&quot;38&quot; fill=&quot;%23111&quot;>Logo Game</text></svg>`)"
-      />
-    </section>
 
-    <p class="tapText" id="tapText">Ketuk layar dimana saja untuk memulai</p>
+  <main class="screen" id="tapArea" aria-label="Tap to start">
+    <img
+      src="assets/img/logomathreveal.png"
+      alt="Math Reveal"
+      class="logo"
+      draggable="false"
+    />
+    <div class="tapText">Ketuk layar di mana saja untuk memulai</div>
   </main>
+
+  <audio id="bgm" loop preload="auto">
+    <source src="assets/audio/mathreveal.mp3" type="audio/mpeg">
+  </audio>
 
   <script>
     const tapArea = document.getElementById("tapArea");
+    const bgm = document.getElementById("bgm");
+    let started = false;
+
+    function persistTime(){
+      try{ sessionStorage.setItem("bgmTime", String(bgm.currentTime || 0)); }catch(_){}
+    }
 
     function goMenu(){
+      persistTime();
       window.location.href = "menu.html";
     }
 
-    // klik / tap di mana saja
-    tapArea.addEventListener("click", goMenu, { passive: true });
-    tapArea.addEventListener("touchstart", goMenu, { passive: true });
+    async function startGame(){
+      if (started) return;
+      started = true;
 
-    // keyboard juga bisa (opsional)
+      // flag supaya halaman lain auto-play
+      localStorage.setItem("bgmUnlocked", "1");
+
+      // play musik (harus setelah gesture)
+      bgm.volume = 0.4;
+      try{ await bgm.play(); }catch(_){}
+
+      // simpan posisi beberapa kali biar aman
+      persistTime();
+      setTimeout(persistTime, 50);
+
+      // pindah ke menu
+      setTimeout(goMenu, 150);
+    }
+
+    tapArea.addEventListener("click", startGame, { passive:true });
+    tapArea.addEventListener("touchstart", startGame, { passive:true });
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") goMenu();
+      if (e.key === "Enter" || e.key === " ") startGame();
     });
+
+    // kalau tiba-tiba pindah tab / reload
+    window.addEventListener("pagehide", persistTime);
   </script>
 </body>
 </html>

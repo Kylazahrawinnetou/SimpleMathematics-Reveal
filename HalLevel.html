@@ -130,15 +130,18 @@
       flex:1;
       border-radius:28px;
       overflow:hidden;
-      background:#000;
+      background:var(--panel);
       border:2px solid var(--stroke);
     }
+
     .imgLayer{
       position:absolute; inset:0;
       width:100%; height:100%;
-      object-fit:cover;
-      filter:grayscale(1) brightness(0);
-      transition: filter .35s ease;
+      object-fit:contain;
+      object-position:center;
+      background:var(--panel);
+      user-select:none;
+      pointer-events:none;
     }
 
     .tiles{
@@ -169,7 +172,6 @@
       100%{transform:translateX(0)}
     }
 
-    /* ===== reveal modal ===== */
     .modalBack{
       position:fixed; inset:0;
       background:var(--backdrop);
@@ -178,54 +180,41 @@
       justify-content:center;
       padding:22px;
       z-index:999;
+      flex-direction:column;
+      gap:14px;
     }
     .modalBack.show{display:flex;}
-    .modalCard{
-      width:min(520px, 94vw);
-      aspect-ratio:1/1;
-      background:var(--panel);
-      border:2px solid var(--stroke);
-      border-radius:28px;
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      box-shadow: 0 26px 80px rgba(0,0,0,.45);
-      animation: floatIn .35s ease;
-    }
-    @keyframes floatIn{
-      from{transform:translateY(14px); opacity:.2}
-      to{transform:translateY(0); opacity:1}
-    }
-    .modalGlow{
-      position:absolute; inset:-30%;
-      opacity:1;
-      mix-blend-mode:screen;
-      pointer-events:none;
-    }
+
     .modalImg{
-      width:82%;
-      height:82%;
-      object-fit:cover;
-      border-radius:22px;
-      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      width:min(520px, 82vw);
+      height:auto;
+      max-height:72vh;
+      object-fit:contain;
+      display:block;
       animation: floaty 2.6s ease-in-out infinite;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,.45));
+      border-radius:18px;
+      user-select:none;
+      pointer-events:none;
     }
     @keyframes floaty{
       0%,100%{transform:translateY(0)}
       50%{transform:translateY(-8px)}
     }
-    .modalHint{
-      position:absolute; right:14px; bottom:14px;
-      background:rgba(255,255,255,.70);
-      border:2px solid var(--stroke);
-      padding:10px 14px;
-      border-radius:999px;
-      font-weight:800;
+
+    .modalHintText{
+      font-size:14px;
+      opacity:.85;
+      letter-spacing:.2px;
+      animation: blink 1.2s ease-in-out infinite;
+      color:#fff;
+      user-select:none;
+    }
+    @keyframes blink{
+      0%,100%{ opacity:1; }
+      50%{ opacity:.25; }
     }
 
-    /* ===== exit modal (badge) ===== */
     .exitCard{
       width:min(560px, 94vw);
       background:var(--panel);
@@ -234,6 +223,10 @@
       padding:18px;
       box-shadow: 0 26px 80px rgba(0,0,0,.45);
       animation: floatIn .35s ease;
+    }
+    @keyframes floatIn{
+      from{transform:translateY(14px); opacity:.2}
+      to{transform:translateY(0); opacity:1}
     }
     .exitTitle{
       font-size:28px;
@@ -280,23 +273,20 @@
 
       <section class="card revealWrap">
         <div id="revealBox" class="revealBox">
-          <img id="img" class="imgLayer" alt="item" />
+          <img id="img" class="imgLayer" alt="locked" />
           <div id="tiles" class="tiles"></div>
         </div>
       </section>
     </div>
   </main>
 
-  <!-- Reveal modal -->
+  <!-- Reveal modal (NO CARD) -->
   <div id="modalBack" class="modalBack" role="dialog" aria-modal="true">
-    <div class="modalCard" id="modalCard">
-      <div id="modalGlow" class="modalGlow"></div>
-      <img id="modalImg" class="modalImg" alt="reveal" />
-      <div class="modalHint">ketuk dimana saja</div>
-    </div>
+    <img id="modalImg" class="modalImg" alt="unlocked" />
+    <div class="modalHintText">Ketuk untuk melanjutkan</div>
   </div>
 
-  <!-- Exit modal (timer habis / no gesture) -->
+  <!-- Exit modal -->
   <div id="exitBack" class="modalBack" role="dialog" aria-modal="true">
     <div class="exitCard" id="exitCard">
       <h2 class="exitTitle">Keluar dari kuis?</h2>
@@ -308,41 +298,87 @@
     </div>
   </div>
 
-  <!-- Audio -->
+  <!-- ✅ AUDIO (BGM + SFX BENAR/SALAH) -->
   <audio id="bgm" loop preload="auto">
-    <source src="assets/audio/bgm.mp3" type="audio/mpeg">
+    <source src="assets/audio/mathreveal.mp3" type="audio/mpeg">
   </audio>
+
   <audio id="sfxCorrect" preload="auto">
-    <source src="assets/audio/correct.mp3" type="audio/mpeg">
+    <source src="assets/audio/benar.mp3" type="audio/mpeg">
   </audio>
+
   <audio id="sfxWrong" preload="auto">
-    <source src="assets/audio/wrong.mp3" type="audio/mpeg">
+    <source src="assets/audio/salah.mp3" type="audio/mpeg">
   </audio>
+
   <audio id="sfxReveal" preload="auto">
     <source src="assets/audio/reveal.mp3" type="audio/mpeg">
   </audio>
 
   <script>
-    // ===== images per phase =====
-    const PHASE_IMAGES = {
-      p2: "assets/img/phase-2x2.jpg",
-      p3: "assets/img/phase-3x3.jpg",
-      p4: "assets/img/phase-4x4.jpg",
+    /* ===============================
+       BGM: NYAMBUNG DARI ATURAN/MENU/INDEX
+       =============================== */
+    const bgm = document.getElementById("bgm");
+
+    function persistBgmTime(){
+      try{ sessionStorage.setItem("bgmTime", String(bgm.currentTime || 0)); }catch(_){}
+    }
+
+    function resumeBgmSoft(){
+      if (localStorage.getItem("bgmUnlocked") !== "1") return;
+
+      const t = Number(sessionStorage.getItem("bgmTime") || "0");
+      if (Number.isFinite(t) && t > 0){
+        try{ bgm.currentTime = t; }catch(_){}
+      }
+      bgm.volume = 0.4;
+      bgm.play().catch(()=>{});
+    }
+
+    // coba hidupin pas load
+    resumeBgmSoft();
+    // simpan posisi pas pindah halaman / reload
+    window.addEventListener("pagehide", persistBgmTime);
+    window.addEventListener("beforeunload", persistBgmTime);
+
+    // paksa play saat ada gesture user (biar ga senyap walau autoplay diblok)
+    function ensureBgmByGesture(){
+      if (localStorage.getItem("bgmUnlocked") !== "1") return;
+      bgm.volume = 0.4;
+      bgm.play().catch(()=>{});
+    }
+
+    /* ===============================
+       LOCKED/UNLOCKED PER PHASE
+       =============================== */
+    const PHASE_LOCKED = {
+      p2: "assets/img/locked_tile2x2.png",
+      p3: "assets/img/locked_tile3x3.png",
+      p4: "assets/img/locked_tile4x4.png",
+    };
+    const PHASE_UNLOCKED = {
+      p2: "assets/img/unlocked_tile2x2.png",
+      p3: "assets/img/unlocked_tile3x3.png",
+      p4: "assets/img/unlocked_tile4x4.png",
     };
 
     function makePlaceholderSVG(label){
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
-          <rect width="900" height="900" fill="#111"/>
-          <rect x="90" y="90" width="720" height="720" rx="52" fill="#222" opacity="0.95"/>
-          <text x="450" y="470" text-anchor="middle" font-family="system-ui,Arial" font-size="44" fill="#eaeaea">${label}</text>
+          <rect width="900" height="900" fill="#d9d9d9"/>
+          <text x="450" y="470" text-anchor="middle" font-family="system-ui,Arial" font-size="44" fill="#111">${label}</text>
         </svg>`;
       return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     }
+
     const PLACEHOLDER = {
-      p2: makePlaceholderSVG("PHASE 2×2"),
-      p3: makePlaceholderSVG("PHASE 3×3"),
-      p4: makePlaceholderSVG("PHASE 4×4"),
+      locked2: makePlaceholderSVG("LOCKED 2×2"),
+      locked3: makePlaceholderSVG("LOCKED 3×3"),
+      locked4: makePlaceholderSVG("LOCKED 4×4"),
+      unlocked2: makePlaceholderSVG("UNLOCKED 2×2"),
+      unlocked3: makePlaceholderSVG("UNLOCKED 3×3"),
+      unlocked4: makePlaceholderSVG("UNLOCKED 4×4"),
     };
 
     const CONFIG = {
@@ -357,26 +393,15 @@
       randomTileOrderFromPhaseIndex: 1,
       noticeDefault: "Ayo hitung cepat!",
       noticeAutoResetMs: 900,
-
-      // glow acak, tanpa label rarity
-      glowPresets: [
-        "radial-gradient(circle at 50% 45%, rgba(255,255,255,.85), rgba(255,255,255,0) 60%)",
-        "radial-gradient(circle at 50% 45%, rgba(80,120,255,.85), rgba(80,120,255,0) 60%)",
-        "radial-gradient(circle at 50% 45%, rgba(180,90,255,.85), rgba(180,90,255,0) 60%)",
-        "radial-gradient(circle at 50% 45%, rgba(255,190,50,.88), rgba(255,190,50,0) 60%)",
-      ],
-
       menuHref: "menu.html",
       endHref: "end.html",
-
-      // kalau belum gesture sama sekali selama 30 detik
       noGesturePromptSec: 30,
-
-      // jawaban hint ditampilkan lebih lama
       hintShowMs: 3200,
     };
 
-    // ===== SAVE =====
+    /* ===============================
+       SAVE
+       =============================== */
     const SAVE_KEY = "revealQuizSave";
     function makeNewSave(){
       return {
@@ -388,8 +413,6 @@
         phaseIndex: 0,
         tilesOpen: 0,
         tileOrder: [],
-
-        // stats untuk end.html
         wrongTotal: 0,
         hintUsed: 0,
       };
@@ -408,8 +431,6 @@
     const state = {
       level: 1,
       wrongThisLevel: 0,
-
-      // stats akumulatif
       wrongTotal: 0,
       hintUsed: 0,
 
@@ -429,12 +450,11 @@
       gameOver: false,
 
       waitingRevealGesture: false,
-
-      audioUnlocked: false,
       hasAnyGesture: false,
 
-      phaseImgSrc: "",
       phaseKey: "p2",
+      lockedSrc: "",
+      unlockedSrc: "",
 
       pausedByExit: false,
     };
@@ -446,18 +466,14 @@
       save.phaseIndex = state.phaseIndex;
       save.tilesOpen = state.tilesOpen;
       save.tileOrder = Array.isArray(state.tileOrder) ? state.tileOrder : [];
-
-      // stats
       save.wrongTotal = Number.isFinite(state.wrongTotal) ? state.wrongTotal : (save.wrongTotal || 0);
       save.hintUsed = Number.isFinite(state.hintUsed) ? state.hintUsed : (save.hintUsed || 0);
-
       writeSave(save);
     }
-    window.addEventListener("beforeunload", () => {
-      try{ syncStateToSave(); }catch(_){}
-    });
 
-    // ===== DOM =====
+    /* ===============================
+       DOM
+       =============================== */
     const elLevel = document.getElementById("level");
     const elWrong = document.getElementById("wrong");
     const elTimer = document.getElementById("timer");
@@ -474,9 +490,7 @@
     const btnMenu = document.getElementById("btnMenu");
 
     const modalBack = document.getElementById("modalBack");
-    const modalGlow = document.getElementById("modalGlow");
     const modalImg = document.getElementById("modalImg");
-    const modalCard = document.getElementById("modalCard");
 
     const exitBack = document.getElementById("exitBack");
     const exitMsg = document.getElementById("exitMsg");
@@ -484,13 +498,15 @@
     const exitNo = document.getElementById("exitNo");
     const exitCard = document.getElementById("exitCard");
 
-    const bgm = document.getElementById("bgm");
     const sfxCorrect = document.getElementById("sfxCorrect");
     const sfxWrong = document.getElementById("sfxWrong");
     const sfxReveal = document.getElementById("sfxReveal");
 
-    // ===== helpers =====
+    /* ===============================
+       HELPERS
+       =============================== */
     let noticeResetT = null;
+
     function setNotice(msg, tone="", autoReset=true){
       elNotice.textContent = msg || "";
       elNotice.classList.remove("good","bad");
@@ -526,24 +542,13 @@
       return arr;
     }
 
-    async function unlockAudioIfNeeded(){
-      if (state.audioUnlocked) return;
-      state.audioUnlocked = true;
-      try{
-        bgm.volume = 0.35;
-        await bgm.play();
-      }catch(e){
-        state.audioUnlocked = false;
-      }
-    }
     function playSfx(el){
-      if (!state.audioUnlocked) return;
       try{ el.currentTime = 0; el.play(); }catch(_){}
     }
 
     function registerGesture(){
       state.hasAnyGesture = true;
-      unlockAudioIfNeeded();
+      ensureBgmByGesture(); // ✅ tiap gesture, paksa BGM hidup
     }
 
     function getPhaseIndex(level){
@@ -560,28 +565,66 @@
       if (idx === 1) return "p3";
       return "p4";
     }
-    function setPhaseImage(idx){
+
+    function setPhaseImages(idx){
       const key = phaseKeyFromIndex(idx);
       state.phaseKey = key;
-      const candidate = PHASE_IMAGES[key] || "";
-      state.phaseImgSrc = candidate || "";
 
-      img.onerror = () => { img.src = PLACEHOLDER[key]; };
-      img.src = state.phaseImgSrc || PLACEHOLDER[key];
-      img.style.filter = "grayscale(1) brightness(0)";
+      state.lockedSrc = PHASE_LOCKED[key] || "";
+      state.unlockedSrc = PHASE_UNLOCKED[key] || "";
+
+      img.onerror = () => {
+        img.src = (key==="p2") ? PLACEHOLDER.locked2 : (key==="p3") ? PLACEHOLDER.locked3 : PLACEHOLDER.locked4;
+      };
+      img.src = state.lockedSrc || ((key==="p2") ? PLACEHOLDER.locked2 : (key==="p3") ? PLACEHOLDER.locked3 : PLACEHOLDER.locked4);
+
+      modalImg.onerror = () => {
+        modalImg.src = (key==="p2") ? PLACEHOLDER.unlocked2 : (key==="p3") ? PLACEHOLDER.unlocked3 : PLACEHOLDER.unlocked4;
+      };
     }
 
-    // ===== exit badge =====
+    /* ===============================
+       TIMER
+       =============================== */
     function pauseTimer(){
       clearInterval(state.timerId);
       state.timerId = null;
     }
+
+    function restartTimerNow(){
+      if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+      state.timerLeft = phaseDef().timer;
+      updateTop();
+    }
+
+    function startTimer(){
+      clearInterval(state.timerId);
+      state.timerLeft = phaseDef().timer;
+      updateTop();
+
+      state.timerId = setInterval(() => {
+        if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
+
+        state.timerLeft--;
+        updateTop();
+
+        if (state.timerLeft <= 0){
+          pauseTimer();
+          showExitBadge("Waktu habis. Mau keluar dari kuis?");
+        }
+      }, 1000);
+    }
+
+    /* ===============================
+       EXIT MODAL
+       =============================== */
     function resumeTimerReset(){
       state.pausedByExit = false;
       state.timerLeft = phaseDef().timer;
       updateTop();
       startTimer();
     }
+
     function showExitBadge(message){
       state.pausedByExit = true;
       pauseTimer();
@@ -594,8 +637,9 @@
 
     exitYes.addEventListener("click", () => {
       registerGesture();
+      persistBgmTime();
       syncStateToSave();
-      window.location.href = CONFIG.menuHref; // ✅ menu.html
+      window.location.href = CONFIG.menuHref;
     });
     exitNo.addEventListener("click", () => {
       registerGesture();
@@ -611,7 +655,9 @@
     });
     exitCard.addEventListener("click", (e) => e.stopPropagation());
 
-    // ===== 30s no gesture watcher =====
+    /* ===============================
+       NO GESTURE WATCHER
+       =============================== */
     function startNoGestureWatcher(){
       const startAt = Date.now();
       const t = setInterval(() => {
@@ -625,7 +671,9 @@
       }, 250);
     }
 
-    // ===== tiles / phase =====
+    /* ===============================
+       TILES / PHASE
+       =============================== */
     function setupPhaseIfNeeded(fromInit=false){
       const idx = getPhaseIndex(state.level);
       const isSamePhase = (idx === state.phaseIndex);
@@ -655,7 +703,7 @@
         const order = [...Array(state.tilesTotal).keys()];
         state.tileOrder = (idx >= CONFIG.randomTileOrderFromPhaseIndex) ? fisherYates(order) : order;
 
-        setPhaseImage(idx);
+        setPhaseImages(idx);
         setNotice(CONFIG.noticeDefault, "", false);
         updateTop();
 
@@ -691,11 +739,7 @@
       state.waitingRevealGesture = true;
       pauseTimer();
 
-      const glow = CONFIG.glowPresets[Math.floor(Math.random() * CONFIG.glowPresets.length)];
-      modalGlow.style.background = glow;
-
-      modalImg.onerror = () => { modalImg.src = PLACEHOLDER[state.phaseKey]; };
-      modalImg.src = state.phaseImgSrc || PLACEHOLDER[state.phaseKey];
+      modalImg.src = state.unlockedSrc || modalImg.src;
 
       playSfx(sfxReveal);
       modalBack.classList.add("show");
@@ -712,9 +756,10 @@
     }
 
     modalBack.addEventListener("click", () => { registerGesture(); closeRevealAndContinue(); });
-    modalCard.addEventListener("click", (e) => { e.stopPropagation(); registerGesture(); closeRevealAndContinue(); });
 
-    // ===== questions =====
+    /* ===============================
+       QUESTIONS
+       =============================== */
     function genQuestion(){
       const ops = phaseDef().ops;
       const op = ops[Math.floor(Math.random() * ops.length)];
@@ -744,27 +789,9 @@
       elQuestion.textContent = `${q.a} ${q.symbol} ${q.b} = ?`;
     }
 
-    // ===== TIMER =====
-    // Kalau habis -> stop timer -> tampilkan badge exit (dan timer tidak lanjut terus)
-    function startTimer(){
-      clearInterval(state.timerId);
-      state.timerLeft = phaseDef().timer;
-      updateTop();
-
-      state.timerId = setInterval(() => {
-        if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
-
-        state.timerLeft--;
-        updateTop();
-
-        if (state.timerLeft <= 0){
-          pauseTimer();
-          showExitBadge("Waktu habis. Mau keluar dari kuis?");
-        }
-      }, 1000);
-    }
-
-    // ===== input =====
+    /* ===============================
+       INPUT
+       =============================== */
     function appendDigit(d){
       if (state.gameOver || state.phaseComplete || state.waitingRevealGesture || state.pausedByExit) return;
       registerGesture();
@@ -793,8 +820,12 @@
 
       const user = Number(state.input);
       const correct = state.question.ans;
+
       state.input = "";
       updateAnswer();
+
+      // ✅ reset timer tiap kali OK ditekan
+      restartTimerNow();
 
       if (user === correct) onCorrect();
       else onWrong("Jawaban salah");
@@ -808,7 +839,7 @@
       if (state.hintsLeft <= 0) return;
 
       state.hintsLeft--;
-      state.hintUsed++;          // ✅ stats
+      state.hintUsed++;
       syncStateToSave();
 
       const ans = String(state.question.ans);
@@ -820,6 +851,7 @@
       state.input = "";
       updateAnswer();
 
+      restartTimerNow();
       setNotice("Skip level (pakai hint)", "", true);
       finishLevel();
     }
@@ -868,19 +900,19 @@
 
     function onWrong(msg){
       state.wrongThisLevel++;
-      state.wrongTotal++;        // ✅ stats
-      syncStateToSave();         // ✅ simpan biar end.html pasti akurat
+      state.wrongTotal++;
+      syncStateToSave();
 
       shake(revealBox);
       setNotice(msg, "bad", true);
-      playSfx(sfxWrong);
+      playSfx(sfxWrong);          // ✅ salah.mp3
       syncHintButton();
       updateTop();
     }
 
     function onCorrect(){
       setNotice("Jawaban benar", "good", true);
-      playSfx(sfxCorrect);
+      playSfx(sfxCorrect);        // ✅ benar.mp3
       finishLevel();
     }
 
@@ -922,16 +954,18 @@
       elQuestion.textContent = "SELESAI";
       btnDel.disabled = true;
       Array.from(keypad.querySelectorAll("button")).forEach(b => b.disabled = true);
-      try{ bgm.pause(); }catch(_){}
+
+      persistBgmTime();
       syncStateToSave();
 
-      // ✅ ke halaman akhir
       setTimeout(() => {
         window.location.href = CONFIG.endHref;
       }, 600);
     }
 
-    // ===== events =====
+    /* ===============================
+       EVENTS
+       =============================== */
     btnDel.addEventListener("click", del);
 
     window.addEventListener("keydown", (e) => {
@@ -946,7 +980,9 @@
       showExitBadge("Balik ke menu?");
     });
 
-    // ===== init =====
+    /* ===============================
+       INIT
+       =============================== */
     function init(){
       buildKeypad();
 
@@ -959,7 +995,6 @@
       state.level = Math.max(1, Math.min(CONFIG.totalLevels, Number(save.level || 1)));
       state.hintsLeft = Number.isFinite(save.hintsLeft) ? save.hintsLeft : CONFIG.totalHints;
 
-      // stats load
       state.wrongTotal = Number.isFinite(save.wrongTotal) ? save.wrongTotal : 0;
       state.hintUsed = Number.isFinite(save.hintUsed) ? save.hintUsed : 0;
 
