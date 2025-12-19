@@ -3,22 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Aturan • Reveal Quiz</title>
+  <title>Memuat</title>
+
   <style>
     :root{
-      --panel:#d9d9d9;
-      --stroke:#222;
-      --text:#111;
-      --muted:rgba(0,0,0,.68);
+      /* =========================
+         🎨 GANTI WARNA DI SINI
+         ========================= */
 
+      /* Background halaman */
+      --bgImage:url("assets/img/bgmathreveal.png");
+
+      /* WARNA TEKS */
+      --text:#111;                 /* warna teks utama (judul, tombol) */
+      --textMuted:rgba(0,0,0,.68); /* warna teks deskripsi aturan */
+
+      /* WARNA PANEL (box aturan & loading) */
+      --panelBase:#d6d6d6;         /* warna dasar panel */
+
+      /* WARNA BORDER / OUTLINE */
+      --stroke:#444;               /* outline normal */
+      --strokeHover:#222;          /* outline hover */
+
+      /* TOMBOL */
+      --btnBase:#d6d6d6;           /* background tombol normal */
+      --btnHover:#ffffff;          /* background tombol hover */
+      --btnActive:#bfbfbf;         /* background tombol ditekan */
+
+      /* Radius / ukuran */
       --roundBig:28px;
       --round:22px;
-      --w: 980px;
+      --w:980px;
+
+      /* Bayangan tombol */
+      --shadowStrong:0 12px 0 rgba(0,0,0,.35);
+      --shadowSoft:0 8px 18px rgba(0,0,0,.18);
     }
 
-    *{box-sizing:border-box;font-family:system-ui,Arial,sans-serif}
-    body{margin:0;background:#fff;color:var(--text)}
-    .page{max-width:var(--w);margin:0 auto;padding:26px}
+    *{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+    html, body{ height:100%; }
+
+    body{
+      margin:0;
+      color:var(--text);
+      background: var(--bgImage) center / cover no-repeat;
+      background-attachment: fixed;
+    }
+
+    .page{ max-width:var(--w); margin:0 auto; padding:26px; }
 
     .stack{
       min-height:calc(100vh - 52px);
@@ -29,10 +61,12 @@
       align-items:center;
     }
 
+    /* =========================
+       🧱 BOX ATURAN (POLOS)
+       ========================= */
     .ruleCard{
       width:min(900px, 92vw);
       height:340px;
-      background:var(--panel);
       border:2px solid var(--stroke);
       border-radius:var(--roundBig);
       display:flex;
@@ -40,6 +74,9 @@
       justify-content:center;
       padding:30px;
       text-align:center;
+
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.04)), var(--panelBase);
+      box-shadow: 0 10px 20px rgba(0,0,0,.12);
     }
 
     .ruleTitle{
@@ -47,22 +84,25 @@
       font-weight:900;
       margin:0 0 14px;
       letter-spacing:.2px;
+      color:var(--text); /* ✅ ganti via --text */
     }
 
     .ruleText{
       margin:0;
       max-width:760px;
-      color:var(--muted);
+      color:var(--textMuted); /* ✅ ganti via --textMuted */
       font-weight:700;
       line-height:1.75;
       font-size:16px;
     }
-    .ruleText .line{display:block;margin:4px 0;}
+    .ruleText .line{ display:block; margin:4px 0; }
 
+    /* =========================
+       ⏳ LOADING CARD (POLOS)
+       ========================= */
     .loadingCard{
       width:min(900px, 92vw);
       height:120px;
-      background:var(--panel);
       border:2px solid var(--stroke);
       border-radius:var(--roundBig);
       display:flex;
@@ -71,6 +111,9 @@
       padding:18px 24px;
       gap:14px;
       flex-direction:column;
+
+      background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(0,0,0,.04)), var(--panelBase);
+      box-shadow: 0 10px 20px rgba(0,0,0,.10);
     }
 
     .barShell{
@@ -80,29 +123,65 @@
       border-radius:999px;
       overflow:hidden;
       background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.18));
-      box-shadow:inset 0 2px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.08);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.08);
       position:relative;
     }
 
     .barFill{
-      height:100%;
-      width:0%;
-      border-radius:999px;
-      background:linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
-      box-shadow:inset 0 2px 0 rgba(255,255,255,.35), 0 6px 14px rgba(0,0,0,.12);
-      transition:width .14s linear;
-    }
+  height:100%;
+  width:0%;
+  border-radius:999px;
 
-    .barFill::after{
-      content:"";
-      position:absolute;
-      left:0; top:0;
-      height:50%;
-      width:100%;
-      background:linear-gradient(90deg, rgba(255,255,255,.35), rgba(255,255,255,0));
-      opacity:.55;
-      pointer-events:none;
-    }
+  /* =========================
+     🎨 WARNA LOADING (HITAM)
+     ========================= */
+  background:#111;
+
+  /* depth / efek timbul */
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.25),
+    0 6px 14px rgba(0,0,0,.2);
+
+  transition:width .14s linear;
+
+  position:relative;
+  overflow:hidden;
+
+  /* animasi lembut */
+  animation: barPulse 1.2s ease-in-out infinite;
+}
+
+/* kilau berjalan */
+.barFill::after{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-40%;
+  width:40%;
+  height:100%;
+  background:linear-gradient(
+    90deg,
+    rgba(255,255,255,0),
+    rgba(255,255,255,.45),
+    rgba(255,255,255,0)
+  );
+  animation: barShine 1.1s linear infinite;
+  pointer-events:none;
+  opacity:.9;
+}
+
+/* =========================
+   🎞️ ANIMASI
+   ========================= */
+@keyframes barShine{
+  to{ left:110%; }
+}
+
+@keyframes barPulse{
+  0%,100%{ filter:brightness(1); }
+  50%{ filter:brightness(1.15); }
+}
+
 
     .btnRow{
       width:min(900px, 92vw);
@@ -113,21 +192,52 @@
       margin-top:2px;
     }
 
+    /* =========================
+       🔘 TOMBOL (NGANGKAT → PRESS)
+       ========================= */
     .btn{
-      background:var(--panel);
-      border:2px solid var(--stroke);
-      border-radius:var(--round);
+      min-width:180px;
       padding:12px 16px;
       font-weight:900;
-      cursor:pointer;
-      min-width:180px;
       text-align:center;
       user-select:none;
+      cursor:pointer;
+
+      color:var(--text);              /* ✅ warna teks tombol: --text */
+      border:5px solid var(--stroke); /* ✅ outline tebal */
+      border-radius:var(--round);
+
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(0,0,0,.03)), var(--btnBase);
+
+      box-shadow: var(--shadowStrong), var(--shadowSoft);
+      transform: translateY(0);
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease, filter .12s ease;
     }
-    .btn:hover{filter:brightness(.98)}
-    .btn:disabled{opacity:.55; cursor:not-allowed;}
+
+    .btn:hover{
+      border-color:var(--strokeHover);
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(0,0,0,.03)), var(--btnHover);
+      filter:brightness(1.02);
+      transform: translateY(-2px); /* ngangkat dikit */
+    }
+
+    .btn:active{
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.06)), var(--btnActive);
+      transform: translateY(8px); /* ditekan */
+      box-shadow: 0 4px 0 rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.12);
+      filter:brightness(.98);
+    }
+
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+      box-shadow: 0 6px 0 rgba(0,0,0,.22);
+      filter:saturate(.9);
+    }
   </style>
 </head>
+
 <body>
   <main class="page">
     <section class="stack">
@@ -185,7 +295,6 @@
       try{ sessionStorage.setItem("bgmTime", String(bgm.currentTime || 0)); }catch(_){}
     }
 
-    // coba lanjutkan musik kalau boleh (kalau ke-block, nanti dipaksa lewat gesture tombol lanjutkan)
     function resumeBgmSoft(){
       if (localStorage.getItem("bgmUnlocked") !== "1") return;
 
@@ -224,7 +333,7 @@
         if (ratio >= 1){
           clearInterval(tickId);
           finished = true;
-          btnContinue.disabled = false;   // ✅ baru aktif setelah penuh
+          btnContinue.disabled = false;
         }
       }, 100);
     }
@@ -236,9 +345,8 @@
     });
 
     btnContinue.addEventListener("click", () => {
-      if (!finished) return; // extra safety
+      if (!finished) return;
 
-      // ✅ gesture user: pastikan musik hidup
       if (localStorage.getItem("bgmUnlocked") === "1"){
         bgm.volume = 0.4;
         bgm.play().catch(()=>{});

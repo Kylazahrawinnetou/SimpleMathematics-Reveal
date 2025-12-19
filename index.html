@@ -3,44 +3,68 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Math Reveal • Tap to Start</title>
+  <title>Ketuk untuk Memulai</title>
 
   <style>
     :root{ --text:#111; }
     *{ box-sizing:border-box; font-family:system-ui, Arial, sans-serif; }
-    body{ margin:0; background:#fff; color:var(--text); }
 
+    body{
+      margin:0;
+      background:url("assets/img/bgmathreveal.png") center / cover no-repeat;
+      color:var(--text);
+      overflow:hidden;
+    }
+
+    /* Layar full, jangan flex biar konsisten dengan menu */
     .screen{
+      position:relative;
       min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:20px;
-      padding:24px;
+      width:100%;
       cursor:pointer;
       user-select:none;
       text-align:center;
     }
 
+    /* ✅ LOGO: posisi + ukuran dibuat sama persis dengan menu */
     .logo{
-      width:min(520px, 85vw);
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      width:520px;      /* konsisten */
+      max-width:85vw;   /* tetap responsif */
       height:auto;
       display:block;
       pointer-events:none;
       user-select:none;
     }
 
+    /* teks ikut anchor center yang sama, turun dari logo */
+    .tapTextWrap{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      margin-top:220px; /* jarak dari logo (samakan dengan menu) */
+      width:100%;
+      padding:0 16px;
+      display:flex;
+      justify-content:center;
+    }
+
     .tapText{
       font-size:17px;
-      opacity:.85;
+      opacity:.9;
       letter-spacing:.2px;
+      color:#fff;
       animation: blink 1.2s ease-in-out infinite;
+      text-shadow: 0 2px 8px rgba(0,0,0,.6);
     }
 
     @keyframes blink{
       0%,100%{ opacity:1; }
-      50%{ opacity:.2; }
+      50%{ opacity:.25; }
     }
   </style>
 </head>
@@ -53,7 +77,10 @@
       class="logo"
       draggable="false"
     />
-    <div class="tapText">Ketuk layar di mana saja untuk memulai</div>
+
+    <div class="tapTextWrap">
+      <div class="tapText">Ketuk layar di mana saja untuk memulai</div>
+    </div>
   </main>
 
   <audio id="bgm" loop preload="auto">

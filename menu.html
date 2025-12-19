@@ -3,70 +3,125 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Menu • Math Reveal</title>
+  <title>Math Reveal Menu</title>
 
   <style>
-    :root{
-      --text:#111;
-      --btn:#d6d6d6;
-      --btnHover:#cfcfcf;
-      --stroke:#222;
-    }
+  :root{
+    /* =========================
+       🎨 GANTI WARNA DI SINI
+       ========================= */
 
-    *{
-      box-sizing:border-box;
-      font-family:system-ui, Arial, sans-serif;
-    }
+    --text:#111;
 
-    body{
-      margin:0;
-      background:#fff;
-      color:var(--text);
-      overflow:hidden; /* tidak scroll */
-    }
+    /* Background tombol */
+    --btn:#d6d6d6;        /* warna normal */
+    --btnHover:#ffffff;   /* saat hover */
+    --btnActive:#bfbfbf;  /* saat ditekan */
 
-    .screen{
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:6px;          /* ✅ JARAK PALING RAPAT */
-      padding:12px;     /* kecil, aman */
-      text-align:center;
-    }
+    /* Outline (border) */
+    --stroke:#444;        /* outline normal */
+    --strokeHover:#222;   /* outline saat hover */
+  }
 
-    /* LOGO TANPA PEMBUNGKUS */
-    .logo{
-      width:min(480px, 85vw);
-      height:auto;
-      display:block;
-      pointer-events:none;
-      user-select:none;
-      margin:0;         /* ❌ NO MARGIN */
-    }
+  *{
+    box-sizing:border-box;
+    font-family:system-ui, Arial, sans-serif;
+  }
 
-    .btn{
-      width:min(420px, 80vw);
-      padding:16px 18px;
-      font-size:28px;
-      font-weight:800;
-      border:2px solid var(--stroke);
-      background:var(--btn);
-      border-radius:22px;
-      cursor:pointer;
-      user-select:none;
-      margin:0;         /* ❌ NO MARGIN */
-    }
-    .btn:hover{ background:var(--btnHover); }
+  body{
+    margin:0;
+    background:url("assets/img/bgmathreveal.png") center / cover no-repeat;
+    color:var(--text);
+    overflow:hidden;
+  }
 
-    .btn.small{
-      width:min(360px, 70vw);
-      font-size:24px;
-      padding:14px 18px;
-      border-radius:18px;
-    }
-  </style>
+  /* layar full */
+  .screen{
+    position:relative;
+    min-height:100vh;
+    width:100%;
+    text-align:center;
+  }
+
+  /* LOGO */
+  .logo{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:520px;
+    max-width:85vw;
+    height:auto;
+    display:block;
+    pointer-events:none;
+    user-select:none;
+  }
+
+  /* wrapper tombol */
+  .buttonWrap{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    margin-top:220px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    padding:0 16px;
+  }
+
+  /* =========================
+     🔘 TOMBOL UTAMA
+     ========================= */
+  .btn{
+    width:min(420px, 80vw);
+    padding:16px 18px;
+    font-size:28px;
+    font-weight:800;
+
+    border:5px solid var(--stroke); /* ✅ outline 8px */
+    background:var(--btn);
+
+    border-radius:22px;
+    cursor:pointer;
+    user-select:none;
+    margin:0;
+
+    /* bayangan bawah → efek tombol fisik */
+    box-shadow:0 10px 0 rgba(0,0,0,.35);
+
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      background 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  /* hover → membesar + ganti warna */
+  .btn:hover{
+    background:var(--btnHover);
+    border-color:var(--strokeHover);
+    transform:scale(1.05);
+  }
+
+  /* ditekan → turun + mengecil */
+  .btn:active{
+    background:var(--btnActive);
+    transform:scale(0.97) translateY(6px);
+    box-shadow:0 4px 0 rgba(0,0,0,.35);
+  }
+
+  /* tombol kecil */
+  .btn.small{
+    width:min(360px, 70vw);
+    font-size:24px;
+    padding:14px 18px;
+    border-radius:18px;
+  }
+</style>
+
 </head>
 <body>
 
@@ -78,8 +133,10 @@
       draggable="false"
     />
 
-    <button id="btnStart" class="btn" type="button">Mulai</button>
-    <button id="btnReset" class="btn small" type="button">Hapus Data</button>
+    <div class="buttonWrap">
+      <button id="btnStart" class="btn" type="button">Mulai</button>
+      <button id="btnReset" class="btn small" type="button">Hapus Data</button>
+    </div>
   </main>
 
   <!-- 🎵 BGM LANJUT -->
