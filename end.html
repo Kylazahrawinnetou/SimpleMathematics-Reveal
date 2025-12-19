@@ -4,74 +4,158 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Game Selesai • Reveal Quiz</title>
+
   <style>
     :root{
-      --panel:#d9d9d9;
+      /* 💗💙 WARNA PINK + BIRU  */
+      --pink:#ffb3dd;
+      --blue:#9ee7ff;
+      --panelGrad:linear-gradient(135deg, #ffb3dd, #ffd1ea, #9ee7ff);
+
       --stroke:#222;
       --text:#111;
-      --muted:rgba(0,0,0,.65);
+      --white:#fff;
+
       --roundBig:28px;
-      --round:22px;
     }
-    *{box-sizing:border-box;font-family:system-ui,Arial,sans-serif}
-    body{margin:0;background:#fff;color:var(--text)}
-    .page{max-width:1100px;margin:0 auto;padding:26px}
+
+    *{
+      box-sizing:border-box;
+      font-family:system-ui,Arial,sans-serif;
+    }
+
+    body{
+      margin:0;
+      background:url("assets/img/bgmathreveal.png") center / cover no-repeat fixed;
+      color:var(--text);
+    }
+
+    .page{
+      max-width:1100px;
+      margin:0 auto;
+      padding:26px;
+    }
 
     .stack{
       min-height:calc(100vh - 52px);
-      display:flex;flex-direction:column;
-      justify-content:center;align-items:center;
-      gap:14px;text-align:center;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:14px;
+      text-align:center;
     }
 
-    .title{font-weight:900;letter-spacing:.6px;margin:0;font-size:28px}
-    .subtitle{margin:0 0 18px;font-weight:700;color:var(--muted);font-size:20px}
+    /* 🟢 JUDUL PUTIH */
+    .title{
+      font-weight:900;
+      letter-spacing:.6px;
+      margin:0;
+      font-size:36px;
+      color:var(--white);
+      text-shadow:0 4px 12px rgba(0,0,0,.6);
+    }
 
+    .subtitle{
+      margin:0 0 22px;
+      font-weight:800;
+      font-size:20px;
+      color:var(--white);
+      text-shadow:0 3px 10px rgba(0,0,0,.6);
+    }
+
+    /* 💗💙 PANEL GRADASI */
     .card{
-      background:var(--panel);
-      border:2px solid var(--stroke);
+      background:var(--panelGrad);
+      border:4px solid var(--stroke);
       border-radius:var(--roundBig);
-      padding:16px 18px;
+      padding:20px 24px;
+      box-shadow:
+        0 14px 0 rgba(0,0,0,.35),
+        0 20px 40px rgba(0,0,0,.25);
     }
 
-    .bigStat{width:min(520px, 92vw);padding:18px 18px 14px}
-    .bigLabel{font-weight:800;color:var(--muted);margin:0 0 6px}
-    .bigValue{font-weight:950;font-size:74px;line-height:1;margin:0}
+    .bigStat{
+      width:min(540px, 92vw);
+    }
+
+    .bigLabel{
+      font-weight:900;
+      margin:0 0 6px;
+    }
+
+    .bigValue{
+      font-weight:950;
+      font-size:74px;
+      margin:0;
+    }
 
     .row{
-      display:grid;grid-template-columns:1fr 1fr;
-      gap:18px;width:min(820px, 92vw);margin-top:10px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      width:min(860px, 92vw);
+      margin-top:12px;
     }
-    @media (max-width: 760px){ .row{grid-template-columns:1fr} }
+
+    @media (max-width:760px){
+      .row{grid-template-columns:1fr}
+    }
 
     .smallStat{
-      padding:16px 18px 12px;min-height:140px;
-      display:flex;flex-direction:column;
-      justify-content:center;align-items:center;gap:6px;
+      min-height:140px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:6px;
     }
-    .smallLabel{font-weight:800;color:var(--muted);margin:0}
-    .smallValue{font-weight:950;font-size:64px;line-height:1;margin:0}
 
+    .smallLabel{
+      font-weight:900;
+      margin:0;
+    }
+
+    .smallValue{
+      font-weight:950;
+      font-size:64px;
+      margin:0;
+    }
+
+    /* 🔘 TOMBOL */
     .actions{
-      display:flex;gap:18px;flex-wrap:wrap;
-      justify-content:center;margin-top:22px;
+      display:flex;
+      gap:20px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:28px;
     }
+
     .btn{
-      background:var(--panel);
-      border:2px solid var(--stroke);
+      background:linear-gradient(135deg, #ffd1ea, #c9f2ff);
+      border:4px solid var(--stroke);
       border-radius:var(--roundBig);
-      padding:18px 22px;
-      font-weight:900;cursor:pointer;
-      min-width:120px;min-height:84px;
-      display:flex;align-items:center;justify-content:center;
-      user-select:none;
+      padding:18px 26px;
+      font-weight:900;
+      cursor:pointer;
+      min-width:150px;
+      min-height:88px;
+      box-shadow:0 10px 0 rgba(0,0,0,.35);
+      transition:.15s ease;
     }
-    .btn:hover{filter:brightness(.98)}
+
+    .btn:hover{transform:scale(1.05)}
+    .btn:active{
+      transform:scale(.96) translateY(6px);
+      box-shadow:0 4px 0 rgba(0,0,0,.35);
+    }
   </style>
 </head>
+
 <body>
   <main class="page">
     <section class="stack">
+
       <h1 class="title">GAME SELESAI</h1>
       <p class="subtitle">Kamu sudah menamatkan semua level</p>
 
@@ -96,106 +180,33 @@
         <button id="btnExit" class="btn">Keluar</button>
         <button id="btnReplay" class="btn">Main Lagi</button>
       </div>
+
     </section>
   </main>
 
-  <!-- ✅ BGM LANJUT -->
+  <!-- 🎵 BGM -->
   <audio id="bgm" loop preload="auto">
     <source src="assets/audio/mathreveal.mp3" type="audio/mpeg">
   </audio>
 
   <script>
-    /* ===============================
-       BGM: LANJUT TANPA MULAI DARI 0
-       =============================== */
-    const bgm = document.getElementById("bgm");
-
-    function persistBgmTime(){
-      try{ sessionStorage.setItem("bgmTime", String(bgm.currentTime || 0)); }catch(_){}
-    }
-
-    function resumeBgmSoft(){
-      if (localStorage.getItem("bgmUnlocked") !== "1") return;
-
-      const t = Number(sessionStorage.getItem("bgmTime") || "0");
-      if (Number.isFinite(t) && t > 0){
-        try{ bgm.currentTime = t; }catch(_){}
-      }
-
-      bgm.volume = 0.4;
-      bgm.play().catch(()=>{});
-    }
-
-    function ensureBgmByGesture(){
-      if (localStorage.getItem("bgmUnlocked") !== "1") return;
-      bgm.volume = 0.4;
-      bgm.play().catch(()=>{});
-    }
-
-    resumeBgmSoft();
-    window.addEventListener("pagehide", persistBgmTime);
-    window.addEventListener("beforeunload", persistBgmTime);
-
-    // kalau user tap di mana aja, pastiin musik nyala
-    window.addEventListener("pointerdown", ensureBgmByGesture, { passive:true });
-    window.addEventListener("keydown", ensureBgmByGesture);
-
-    /* ===============================
-       ORIGINAL END LOGIC
-       =============================== */
     const SAVE_KEY = "revealQuizSave";
     const TOTAL_LEVELS = 29;
 
-    function loadSave(){
-      try{
-        const raw = localStorage.getItem(SAVE_KEY);
-        return raw ? JSON.parse(raw) : null;
-      }catch(e){
-        return null;
-      }
-    }
+    const save = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
 
-    function writeSave(obj){
-      obj.updatedAt = Date.now();
-      localStorage.setItem(SAVE_KEY, JSON.stringify(obj));
-    }
+    document.getElementById("totalLevel").textContent = TOTAL_LEVELS;
+    document.getElementById("hintUsed").textContent = save.hintUsed || 0;
+    document.getElementById("totalWrong").textContent = save.wrongTotal || 0;
 
-    const save = loadSave() || {};
-    const hintUsed = Number.isFinite(save.hintUsed) ? save.hintUsed : 0;
-    const wrongTotal = Number.isFinite(save.wrongTotal) ? save.wrongTotal : 0;
-
-    document.getElementById("totalLevel").textContent = String(TOTAL_LEVELS);
-    document.getElementById("hintUsed").textContent = String(hintUsed);
-    document.getElementById("totalWrong").textContent = String(wrongTotal);
-
-    document.getElementById("btnExit").addEventListener("click", () => {
-      ensureBgmByGesture();
-      persistBgmTime();
-      window.location.href = "menu.html";
-    });
-
-    document.getElementById("btnReplay").addEventListener("click", () => {
-      ensureBgmByGesture();
-      persistBgmTime();
-
-      const next = {
-        ...save,
-        version: save.version || 1,
-        createdAt: save.createdAt || Date.now(),
-        updatedAt: Date.now(),
-
-        level: 1,
-        phaseIndex: 0,
-        tilesOpen: 0,
-        tileOrder: [],
-        hintsLeft: (typeof save.hintsLeft === "number") ? save.hintsLeft : 3,
-
-        wrongTotal: 0,
-        hintUsed: 0,
-      };
-      writeSave(next);
-      window.location.href = "HalLevel.html";
-    });
+    document.getElementById("btnExit").onclick = () => location.href="menu.html";
+    document.getElementById("btnReplay").onclick = () => {
+      save.level = 1;
+      save.wrongTotal = 0;
+      save.hintUsed = 0;
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+      location.href="HalLevel.html";
+    };
   </script>
 </body>
 </html>
